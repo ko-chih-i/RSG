@@ -42,7 +42,7 @@ parser.add_argument('--rand_number', default=0, type=int, help='fix random numbe
 parser.add_argument('--exp_str', default='0', type=str, help='number to indicate which experiment it is')
 parser.add_argument('-j', '--workers', default=4, type=int, metavar='N',
                     help='number of data loading workers (default: 4)')
-parser.add_argument('--epochs', default=200, type=int, metavar='N',
+parser.add_argument('--epochs', default=10, type=int, metavar='N',
                     help='number of total epochs to run')
 parser.add_argument('--epoch_thresh', default=159, type=int, metavar='N',
                     help='the epoch threshold for generating rare samples')
@@ -75,9 +75,7 @@ parser.add_argument('--root_model', type=str, default='checkpoint')
 parser.add_argument('--head_tail_ratio', type=float, default=0.2)
 parser.add_argument('--transfer_strength', type=float, default=1.0)
 
-
 best_acc1 = 0
-
 
 def main():
     args = parser.parse_args()
@@ -103,7 +101,6 @@ def main():
 
     main_worker(args.gpu, ngpus_per_node, args)
 
-
 def main_worker(gpu, ngpus_per_node, args):
     global best_acc1
     args.gpu = gpu
@@ -124,7 +121,6 @@ def main_worker(gpu, ngpus_per_node, args):
     optimizer = torch.optim.SGD(model.parameters(), args.lr,
                                 momentum=args.momentum,
                                 weight_decay=args.weight_decay)
-
 
     cudnn.benchmark = True
 
@@ -161,7 +157,6 @@ def main_worker(gpu, ngpus_per_node, args):
     train_loader = torch.utils.data.DataLoader(
         train_dataset, batch_size=args.batch_size, shuffle=(train_sampler is None),
         num_workers=args.workers, pin_memory=True, sampler=train_sampler, drop_last=True)
-
 
     val_loader = torch.utils.data.DataLoader(
         val_dataset, batch_size=100, shuffle=False,
@@ -242,7 +237,6 @@ def main_worker(gpu, ngpus_per_node, args):
             'optimizer' : optimizer.state_dict(),
         }, is_best)
 
-
 def train(train_loader, model, criterion, optimizer, epoch, args, log, tf_writer):
     batch_time = AverageMeter('Time', ':6.3f')
     data_time = AverageMeter('Data', ':6.3f')
@@ -268,6 +262,9 @@ def train(train_loader, model, criterion, optimizer, epoch, args, log, tf_writer
         output, cesc_loss, total_mv_loss, combine_target= model(input, epoch, target)
 
         loss = criterion(output, combine_target) + 0.1 * cesc_loss.mean() + 0.01 * total_mv_loss.mean()
+        #output = model(input, epoch=epoch, batch_target=target, phase_train=False)
+        #combine_target = target
+        #loss = criterion(output, combine_target)
 
         # measure accuracy and record loss
         acc1, acc5 = accuracy(output, combine_target, topk=(1, 5))
